@@ -1,77 +1,64 @@
-from fastapi import FastAPI, Header, HTTPException, Request
-from pydantic import BaseModel
-from typing import List, Optional, Dict
+from fastapi import FastAPI, Request
+from typing import List, Dict
+from create_chat_completion_response import CreateChatCompletionResponse
+import pprint
+from fastapi.responses import StreamingResponse
+import logging
+import asyncio
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-class Message(BaseModel):
-    role: str
-    content: str
 
-class ChatRequest(BaseModel):
-    model: str
-    messages: List<Message]
-    stream: Optional[bool] = False
+@app.post(
+    "/v1/chat/completions", response_model=CreateChatCompletionResponse
+)
+async def create_chat_completion(
+    request: Request
+) -> CreateChatCompletionResponse:
+    # Log basic request details
+    logger.info(f"Method: {request.method}")
+    logger.info(f"URL: {request.url}")
 
-class MessageResponse(BaseModel):
-    role: str
-    content: str
+    # Log headers (optional: filter or select specific headers)
+    headers = dict(request.headers)
+    logger.info(f"Headers: \n{pprint.pformat(headers, sort_dicts=False)}")
 
-class Choice(BaseModel):
-    index: int
-    message: MessageResponse
-    logprobs: Optional[Dict] = None
-    finish_reason: str
+    # Read and log the body
+    body = await request.json()
+    logger.info(f"Body: \n{pprint.pformat(body, sort_dicts=False)}")
 
-class Usage(BaseModel):
-    prompt_tokens: int
-    completion_tokens: int
-    total_tokens: int
+    response = CreateChatCompletionResponse()
+    response.choices[0].message.content = "Hello I am a mock AI. How are you doing?"
+    response.choices[0].finish_reason = "stop"
+    # print(response.model_dump_json(indent=2))
+    # print(response.model_dump_json())
 
-class ChatResponse(BaseModel):
-    id: str
-    object: str
-    created: int
-    model: str
-    choices: List[Choice]
-    usage: Usage
-    system_fingerprint: str
+    streaming = body.get('stream', False)
 
-@app.post("/v1/chat/completions", response_model=ChatResponse)
-async def create_completion(
-    request: Request,
-    authorization: str = Header(None),
-    cookie: str = Header(None)
-):
-    if authorization != "Bearer xxxxx":
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    
-    chat_request = await request.json()
+    if not streaming:
+        logger.info(f'not streaming: {pprint.pformat(response)}')
+        return response
+    else:
+        # Generate array of responses for streaming
+        responses = CreateChatCompletionResponse.create_stream_responses('Hello I am a mock AI. How are you doing?')
 
-    response = ChatResponse(
-        id="chatcmpl-9SKkDA18Aiy8ajfSlsXLpI3gO53sJ",
-        object="chat.completion",
-        created=1716539953,
-        model="gpt-4o-2024-05-13",
-        choices=[
-            Choice(
-                index=0,
-                message=MessageResponse(
-                    role="assistant",
-                    content="Hi there! How can I assist you today?"
-                ),
-                logprobs=None,
-                finish_reason="stop"
-            )
-        ],
-        usage=Usage(
-            prompt_tokens=19,
-            completion_tokens=10,
-            total_tokens=29
-        ),
-        system_fingerprint="fp_729ea513f7"
-    )
-    return response
+        # Simulate data generation for the response
+        async def response_stream():
+            for response in responses:
+                yield f"data: {response}\n\n"
+                await asyncio.sleep(0.005)
+            yield '[DONE]'
+
+        return StreamingResponse(response_stream(), media_type="text/event-stream")
 
 if __name__ == "__main__":
     import uvicorn

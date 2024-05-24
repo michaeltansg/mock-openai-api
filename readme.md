@@ -1,10 +1,10 @@
 uvicorn app:app --reload
+uvicorn app:app --host 0.0.0.0 --port 8000 --reload
 
-curl --location 'http://127.0.0.1:8000/v1/chat/completions' \
---header 'Content-Type: application/json' \
---header 'Authorization: Bearer XXX' \
---header 'Cookie: __cf_bm=uEE4.shRh6ydUizv6_GXLHc5gRHmTPLyphIgdZwO.NA-1716538942-1.0.1.1-5rAUV8MB0qr9OU4qNsJUvjMrDXsaj.XOhtRfRfWMFqxwwWrwRriz0pTfJyUTlDYel3n7HX05p9SO1Df59fNjXA; _cfuvid=bY5eyH_A8K18omXhGDvTCJRe4wxeK4WKry3BYkPl2rQ-1716538942953-0.0.1.1-604800000' \
---data '{
+curl http://localhost:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer xxxx" \
+  -d '{
     "model": "gpt-4o",
     "messages": [
       {
@@ -16,5 +16,30 @@ curl --location 'http://127.0.0.1:8000/v1/chat/completions' \
         "content": "Hello!"
       }
     ],
-    "stream": false
+    "stream": true
   }'
+
+
+
+{
+    "id": "chatcmpl-FindQX3pWVbTgFx5hv11UgWNMUS90a",
+    "object": "chat.completion.chunk",
+    "created": 1716545324,
+    "model": "fake-model",
+    "choices": [
+        {
+            "index": 0,
+            "delta": {},
+            "logprobs": null,
+            "finish_reason": "stop"
+        }
+    ],
+    "system_fingerprint": null,
+    "citations": [
+        {
+            "source": "",
+            "page": "",
+            "metadata": ""
+        }
+    ]
+}
