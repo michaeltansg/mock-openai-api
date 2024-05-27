@@ -12,6 +12,12 @@ class Message(BaseModel):
     role: str = 'assistant'
     content: str = ''
 
+class Citation(BaseModel):
+    source: str
+    page: str
+    link: str
+    metadata: str
+
 class Choice(BaseModel):
     index: int = 0
     message: Message = Field(default_factory=Message, alias='delta')
@@ -34,6 +40,38 @@ class CreateChatCompletionResponse(BaseModel):
     choices: List[Choice] = Field(default_factory=lambda: [Choice()])
     usage: Usage = Field(default_factory=Usage)
     system_fingerprint: Optional[dict] = None
+    citations: List[Citation] = Field(default_factory=lambda: [
+        Citation(
+            source="This is a sample citation text 1.",
+            page="10-11",
+            link="http://example.com/source1",
+            metadata="Source 1"
+        ),
+        Citation(
+            source="This is a sample citation text 2.",
+            page="23-25",
+            link="http://example.com/source2",
+            metadata="Source 2"
+        ),
+        Citation(
+            source="This is a sample citation text 3.",
+            page="45",
+            link="http://example.com/source3",
+            metadata="Source 3"
+        ),
+        Citation(
+            source="This is a sample citation text 4.",
+            page="50-55",
+            link="http://example.com/source4",
+            metadata="Source 4"
+        ),
+        Citation(
+            source="This is a sample citation text 5.",
+            page="90-98",
+            link="http://example.com/source5",
+            metadata="Source 5"
+        )
+    ])
 
     @classmethod
     def create_stream_responses(cls, content: str):
@@ -64,7 +102,7 @@ class CreateChatCompletionResponse(BaseModel):
         self.object = 'chat.completion.chunk'
         return self.json(
             by_alias=True, 
-            exclude={"usage": True}
+            exclude={"usage": True, "citations": True}
         )
 
     def body_delta_message(self, text: str):
@@ -72,7 +110,7 @@ class CreateChatCompletionResponse(BaseModel):
         self.choices[0].message.content = text
         return self.json(
             by_alias=True,
-            exclude={"choices": {"__all__": {"message": {"role": True}}}, "usage": True},
+            exclude={"choices": {"__all__": {"message": {"role": True}}}, "usage": True, "citations": True},
         )
 
     def last_delta_message(self):
