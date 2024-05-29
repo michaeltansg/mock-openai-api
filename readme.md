@@ -39,6 +39,7 @@ curl http://localhost:8000/v1/chat/completions \
         {
             "source": "",
             "page": "",
+            "link": "",
             "metadata": ""
         }
     ]
